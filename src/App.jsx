@@ -170,41 +170,9 @@ function filterCandidateItemsForSession(items, session) {
   const budget = resolveBudget(session);
   if (!Number.isFinite(budget)) return items;
 
-  const keepMode = resolveKeepMode(session);
-  const keepTarget = resolveKeepTarget(session);
-  const exactCountMode =
-    (keepMode === "exact" || keepMode === "custom") &&
-    Number.isFinite(keepTarget) &&
-    keepTarget > 0;
-
-  const budgetEligibleItems = items.filter((item) => {
+  return items.filter((item) => {
     const price = parseItemPrice(item.price);
     return price == null || price <= budget;
-  });
-
-  if (!exactCountMode || keepTarget <= 1) {
-    return budgetEligibleItems;
-  }
-
-  return budgetEligibleItems.filter((item) => {
-    const itemPrice = parseItemPrice(item.price);
-    if (itemPrice == null) return true;
-
-    const cheapestCompanions = budgetEligibleItems
-      .filter((otherItem) => otherItem.id !== item.id)
-      .map((otherItem) => parseItemPrice(otherItem.price))
-      .filter((price) => price != null)
-      .sort((a, b) => a - b)
-      .slice(0, keepTarget - 1);
-
-    if (cheapestCompanions.length < keepTarget - 1) {
-      return true;
-    }
-
-    const minimumPossibleTotal =
-      itemPrice + cheapestCompanions.reduce((sum, price) => sum + price, 0);
-
-    return minimumPossibleTotal <= budget;
   });
 }
 
