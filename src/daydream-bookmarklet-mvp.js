@@ -1,6 +1,5 @@
 (function () {
-  const APP_URL = `${window.location.protocol}//${window.location.host}`;
-
+  const APP_URL = "https://cartcleanse-import-test.vercel.app";
   if (window.__cartcleanseCleanup) {
     window.__cartcleanseCleanup();
   }
