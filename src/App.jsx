@@ -155,6 +155,7 @@ function resolveBudget(session) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+
 function parseItemPrice(value) {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : null;
@@ -164,6 +165,52 @@ function parseItemPrice(value) {
 
   const numeric = Number(value.replace(/[^\d.]/g, ""));
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
+function filterCandidateItemsForSession(items, session) {
+  const budget = resolveBudget(session);
+  const sourceItems = items || [];
+
+  if (!Number.isFinite(budget)) return sourceItems;
+
+  const budgetEligibleItems = sourceItems.filter((item) => {
+    const price = parseItemPrice(item.price);
+    return price == null || price <= budget;
+  });
+
+  const keepMode = resolveKeepMode(session);
+  const keepTarget = resolveKeepTarget(session);
+  const isExactCountMode =
+    (keepMode === "exact" || keepMode === "custom") &&
+    Number.isFinite(keepTarget) &&
+    keepTarget > 1;
+
+  if (!isExactCountMode) {
+    return budgetEligibleItems;
+  }
+
+  const smartFilteredItems = budgetEligibleItems.filter((item) => {
+    const itemPrice = parseItemPrice(item.price);
+    if (itemPrice == null) return true;
+
+    const companionPrices = budgetEligibleItems
+      .filter((otherItem) => otherItem.id !== item.id)
+      .map((otherItem) => parseItemPrice(otherItem.price))
+      .filter((price) => price != null)
+      .sort((a, b) => a - b)
+      .slice(0, keepTarget - 1);
+
+    if (companionPrices.length < keepTarget - 1) {
+      return true;
+    }
+
+    const minimumPossibleTotal =
+      itemPrice + companionPrices.reduce((sum, price) => sum + price, 0);
+
+    return minimumPossibleTotal <= budget;
+  });
+
+  return smartFilteredItems.length > 0 ? smartFilteredItems : budgetEligibleItems;
 }
 
 export default function App() {
@@ -275,16 +322,12 @@ export default function App() {
         }
         onBack={() => setCurrentPage("quick-cut")}
         onStartNarrowing={() => {
-          const budget = resolveBudget(session);
-
           const sourceItems = session.baseCandidateItems || session.candidateItems || [];
 
-          const candidateItems = !Number.isFinite(budget)
-            ? sourceItems
-            : sourceItems.filter((item) => {
-                const price = parseItemPrice(item.price);
-                return price == null || price <= budget;
-              });
+          const candidateItems = filterCandidateItemsForSession(
+            sourceItems,
+            session
+          );
 
           updateSession({
             candidateItems,
