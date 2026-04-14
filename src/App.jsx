@@ -171,6 +171,7 @@ export default function App() {
 
   const [session, setSession] = useState({
     candidateItems: mockItems,
+    baseCandidateItems: mockItems,
     importedItems: mockItems,
     keepTarget: 3,
     customKeepValue: "",
@@ -197,6 +198,7 @@ export default function App() {
       ...prev,
       importedItems,
       candidateItems: importedItems,
+      baseCandidateItems: importedItems,
       pairwiseOutcomes: [],
       finalistIds: [],
     }));
@@ -227,7 +229,10 @@ export default function App() {
         session={session}
         onBack={() => setCurrentPage("install")}
         onContinue={(candidateItems) => {
-          updateSession({ candidateItems });
+          updateSession({
+            candidateItems,
+            baseCandidateItems: candidateItems,
+          });
           setCurrentPage("set-goal");
         }}
       />
@@ -272,9 +277,11 @@ export default function App() {
         onStartNarrowing={() => {
           const budget = resolveBudget(session);
 
+          const sourceItems = session.baseCandidateItems || session.candidateItems || [];
+
           const candidateItems = !Number.isFinite(budget)
-            ? session.candidateItems || []
-            : (session.candidateItems || []).filter((item) => {
+            ? sourceItems
+            : sourceItems.filter((item) => {
                 const price = parseItemPrice(item.price);
                 return price == null || price <= budget;
               });
