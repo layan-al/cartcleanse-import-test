@@ -59,7 +59,7 @@ export default function SetGoalPage({
             </div>
 
             <div className="goal-meta">
-              <span className="meta-item">03 — Set Goal</span>
+              <span className="meta-item">04 — Set Goal</span>
             </div>
           </div>
 

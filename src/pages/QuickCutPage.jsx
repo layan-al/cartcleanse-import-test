@@ -50,7 +50,7 @@ export default function QuickCutPage({ session, onBack, onContinue }) {
             </div>
 
             <div className="header-meta">
-              <span className="meta-item">04 — Quick Cut</span>
+              <span className="meta-item">03 — Quick Cut</span>
               <span className="meta-slash" />
               <span className="meta-item">Imported {importedCount}</span>
               <span className="meta-slash" />
