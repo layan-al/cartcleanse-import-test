@@ -143,39 +143,6 @@ function resolveKeepMode(session) {
   return "exact";
 }
 
-function resolveBudget(session) {
-  if (session.budgetMode === "none") return null;
-
-  if (session.budgetMode === "custom") {
-    const parsed = Number(session.customBudgetValue);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-  }
-
-  const parsed = Number(session.budgetValue);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
-function parseItemPrice(value) {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value !== "string") return null;
-
-  const numeric = Number(value.replace(/[^\d.]/g, ""));
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-}
-
-function filterCandidateItemsForSession(items, session) {
-  const budget = resolveBudget(session);
-  if (!Number.isFinite(budget)) return items;
-
-  return items.filter((item) => {
-    const price = parseItemPrice(item.price);
-    return price == null || price <= budget;
-  });
-}
-
 export default function App() {
   const [currentPage, setCurrentPage] = useState("setup");
 
@@ -279,22 +246,7 @@ export default function App() {
           updateSession({ customBudgetValue: value })
         }
         onBack={() => setCurrentPage("quick-cut")}
-        onStartNarrowing={() => {
-          const feasibleCandidateItems = filterCandidateItemsForSession(
-            session.candidateItems || [],
-            session
-          );
-
-          updateSession({
-            candidateItems: feasibleCandidateItems,
-            pairwiseOutcomes: [],
-            finalistIds: [],
-            tieBreakRound: false,
-            tieBreakItemIds: [],
-            tieBreakComplete: false,
-          });
-          setCurrentPage("compare");
-        }}
+        onStartNarrowing={() => setCurrentPage("compare")}
       />
     );
   }
