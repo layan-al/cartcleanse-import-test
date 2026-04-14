@@ -472,7 +472,7 @@ export default function ResultsPage({ session, onBack }) {
   const [pressureIndex, setPressureIndex] = useState(0);
   const [toast, setToast] = useState(null);
   const [pressedAnswer, setPressedAnswer] = useState(null);
-  const [showDebug, setShowDebug] = useState(false);
+  const showDebug = new URLSearchParams(window.location.search).get("debug") === "1";
 
   const allItems = session.candidateItems || [];
   const finalistIds = session.finalistIds || allItems.map((item) => item.id);
@@ -576,7 +576,6 @@ export default function ResultsPage({ session, onBack }) {
     setIsPressureOpen(false);
     setPressureIndex(0);
     setToast(null);
-    setShowDebug(false);
     setPressedAnswer(null);
   }, [
     session.pairwiseOutcomes,
@@ -772,13 +771,6 @@ export default function ResultsPage({ session, onBack }) {
                 Pressure test picks
               </button>
 
-              <button
-                className="pressure-button pressure-button-secondary"
-                type="button"
-                onClick={() => setShowDebug((prev) => !prev)}
-              >
-                {showDebug ? "Hide debug data" : "Show debug data"}
-              </button>
 
               <button
                 className="pressure-button pressure-button-secondary"
