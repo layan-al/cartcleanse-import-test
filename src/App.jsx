@@ -143,6 +143,29 @@ function resolveKeepMode(session) {
   return "exact";
 }
 
+function resolveBudget(session) {
+  if (session.budgetMode === "none") return null;
+
+  if (session.budgetMode === "custom") {
+    const parsed = Number(session.customBudgetValue);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  const parsed = Number(session.budgetValue);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseItemPrice(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== "string") return null;
+
+  const numeric = Number(value.replace(/[^\d.]/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState("setup");
 
@@ -246,7 +269,26 @@ export default function App() {
           updateSession({ customBudgetValue: value })
         }
         onBack={() => setCurrentPage("quick-cut")}
-        onStartNarrowing={() => setCurrentPage("compare")}
+        onStartNarrowing={() => {
+          const budget = resolveBudget(session);
+
+          const candidateItems = !Number.isFinite(budget)
+            ? session.candidateItems || []
+            : (session.candidateItems || []).filter((item) => {
+                const price = parseItemPrice(item.price);
+                return price == null || price <= budget;
+              });
+
+          updateSession({
+            candidateItems,
+            pairwiseOutcomes: [],
+            finalistIds: [],
+            tieBreakRound: false,
+            tieBreakItemIds: [],
+            tieBreakComplete: false,
+          });
+          setCurrentPage("compare");
+        }}
       />
     );
   }
