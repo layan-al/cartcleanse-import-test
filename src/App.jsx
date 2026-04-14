@@ -143,6 +143,71 @@ function resolveKeepMode(session) {
   return "exact";
 }
 
+function resolveBudget(session) {
+  if (session.budgetMode === "none") return null;
+
+  if (session.budgetMode === "custom") {
+    const parsed = Number(session.customBudgetValue);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  const parsed = Number(session.budgetValue);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseItemPrice(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== "string") return null;
+
+  const numeric = Number(value.replace(/[^\d.]/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
+function filterCandidateItemsForSession(items, session) {
+  const budget = resolveBudget(session);
+  if (!Number.isFinite(budget)) return items;
+
+  const keepMode = resolveKeepMode(session);
+  const keepTarget = resolveKeepTarget(session);
+  const exactCountMode =
+    (keepMode === "exact" || keepMode === "custom") &&
+    Number.isFinite(keepTarget) &&
+    keepTarget > 0;
+
+  const budgetEligibleItems = items.filter((item) => {
+    const price = parseItemPrice(item.price);
+    return price == null || price <= budget;
+  });
+
+  if (!exactCountMode || keepTarget <= 1) {
+    return budgetEligibleItems;
+  }
+
+  return budgetEligibleItems.filter((item) => {
+    const itemPrice = parseItemPrice(item.price);
+    if (itemPrice == null) return true;
+
+    const cheapestCompanions = budgetEligibleItems
+      .filter((otherItem) => otherItem.id !== item.id)
+      .map((otherItem) => parseItemPrice(otherItem.price))
+      .filter((price) => price != null)
+      .sort((a, b) => a - b)
+      .slice(0, keepTarget - 1);
+
+    if (cheapestCompanions.length < keepTarget - 1) {
+      return true;
+    }
+
+    const minimumPossibleTotal =
+      itemPrice + cheapestCompanions.reduce((sum, price) => sum + price, 0);
+
+    return minimumPossibleTotal <= budget;
+  });
+}
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState("setup");
 
@@ -246,7 +311,22 @@ export default function App() {
           updateSession({ customBudgetValue: value })
         }
         onBack={() => setCurrentPage("quick-cut")}
-        onStartNarrowing={() => setCurrentPage("compare")}
+        onStartNarrowing={() => {
+          const feasibleCandidateItems = filterCandidateItemsForSession(
+            session.candidateItems || [],
+            session
+          );
+
+          updateSession({
+            candidateItems: feasibleCandidateItems,
+            pairwiseOutcomes: [],
+            finalistIds: [],
+            tieBreakRound: false,
+            tieBreakItemIds: [],
+            tieBreakComplete: false,
+          });
+          setCurrentPage("compare");
+        }}
       />
     );
   }
